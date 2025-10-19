@@ -76,9 +76,17 @@ export const check = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    res.status(401).json({
+    res.json({
       code: "error",
-      message: "Refresh token không hợp lệ!",
+      message: "Lỗi hàm check!",
     });
   }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  res.clearCookie("refreshToken");
+  res.json({
+    code: "success",
+    message: "Đã đăng xuất!",
+  });
 };

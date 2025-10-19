@@ -8,4 +8,6 @@ router.post("/refresh", authController.refreshToken);
 
 router.get("/check", authMiddleware.verifyToken, authController.check);
 
+router.get("/logout", authController.logout);
+
 export default router;
