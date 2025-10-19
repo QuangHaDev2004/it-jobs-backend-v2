@@ -76,12 +76,12 @@ export const loginPost = async (req: Request, res: Response) => {
     },
     `${process.env.REFRESH_TOKEN_SECRET}`,
     {
-      expiresIn: "1d", // 7 ngày
+      expiresIn: "7d", // 7 ngày
     }
   );
 
   res.cookie("refreshToken", refreshToken, {
-    maxAge: 1 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // production (https) = true, dev (htttp) = false
     sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
