@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import AccountCompany from "../models/account-company.model";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export const registerPost = async (req: Request, res: Response) => {
   const existAccount = await AccountCompany.findOne({
@@ -27,3 +28,69 @@ export const registerPost = async (req: Request, res: Response) => {
     message: "Đăng ký tài khoản thành công!",
   });
 };
+
+export const loginPost = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  const existAccount = await AccountCompany.findOne({
+    email: email,
+  });
+
+  if (!existAccount) {
+    res.json({
+      code: "error",
+      message: "Email không tồn tại trong hệ thống!",
+    });
+    return;
+  }
+
+  const isPasswordValid = await bcrypt.compare(
+    password,
+    `${existAccount.password}`
+  );
+
+  if (!isPasswordValid) {
+    res.json({
+      code: "error",
+      message: "Sai mật khẩu!",
+    });
+    return;
+  }
+
+  // sign 3 tham số: thông tin muốn mã hóa, mã bảo mật, thời gian lưu
+  const accessToken = jwt.sign(
+    {
+      id: existAccount.id,
+      email: existAccount.email,
+    },
+    `${process.env.ACCESS_TOKEN_SECRET}`,
+    {
+      expiresIn: "15m", // 15 phút
+    }
+  );
+
+  const refreshToken = jwt.sign(
+    {
+      id: existAccount.id,
+      email: existAccount.email,
+    },
+    `${process.env.REFRESH_TOKEN_SECRET}`,
+    {
+      expiresIn: "7d", // 7 ngày
+    }
+  );
+
+  res.cookie("refreshToken", refreshToken, {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // production (https) = true, dev (htttp) = false
+    sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
+  });
+
+  res.json({
+    code: "success",
+    message: "Đăng nhập thành công!",
+    accessToken: accessToken,
+  });
+};
+
