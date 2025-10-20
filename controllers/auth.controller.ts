@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import AccountUser from "../models/account-user.model";
+import AccountCompany from "../models/account-company.model";
 
 export const refreshToken = async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken;
@@ -69,7 +70,27 @@ export const check = async (req: Request, res: Response) => {
       return;
     }
 
-    if (!existAccountUser) {
+    const existAccountCompany = await AccountCompany.findOne({
+      _id: id,
+      email: email,
+    });
+
+    if (existAccountCompany) {
+      const infoCompany = {
+        id: existAccountCompany.id,
+        email: existAccountCompany.email,
+        companyName: existAccountCompany.companyName,
+      };
+
+      res.json({
+        code: "success",
+        message: "Thông tin tài khoản company!",
+        infoCompany: infoCompany,
+      });
+      return;
+    }
+
+    if (!existAccountUser && !existAccountCompany) {
       res.json({
         code: "error",
         message: "Không tìm thấy tài khoản!",
