@@ -48,7 +48,22 @@ export const refreshToken = async (req: Request, res: Response) => {
 
 export const check = async (req: Request, res: Response) => {
   try {
-    const { id, email } = (req as any).decoded;
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(" ")[1];
+
+    if (!token) {
+      res.status(401).json({
+        code: "error",
+        message: "Không có access token!",
+      });
+      return;
+    }
+
+    const decoded = jwt.verify(
+      token,
+      `${process.env.ACCESS_TOKEN_SECRET}`
+    ) as jwt.JwtPayload;
+    const { id, email } = decoded;
 
     const existAccountUser = await AccountUser.findOne({
       _id: id,
@@ -91,15 +106,15 @@ export const check = async (req: Request, res: Response) => {
     }
 
     if (!existAccountUser && !existAccountCompany) {
-      res.json({
+      res.status(401).json({
         code: "error",
         message: "Không tìm thấy tài khoản!",
       });
     }
   } catch (error) {
-    res.json({
+    res.status(401).json({
       code: "error",
-      message: "Lỗi hàm check!",
+      message: "Token không hợp lệ!",
     });
   }
 };
