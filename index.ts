@@ -10,7 +10,7 @@ import routes from "./routes/index.route";
 import { connectDB } from "./config/database.config";
 
 const app = express();
-const port = 8080;
+const port = 8081;
 
 // Kết nối CSDL
 connectDB();
