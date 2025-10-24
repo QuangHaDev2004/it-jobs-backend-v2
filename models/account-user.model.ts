@@ -5,6 +5,8 @@ const schema = new mongoose.Schema(
     fullName: String,
     email: String,
     password: String,
+    phone: String,
+    avatar: String,
   },
   {
     timestamps: true, // Tự động sinh ra trường createdAt và updatedAt
