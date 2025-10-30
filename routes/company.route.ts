@@ -43,7 +43,7 @@ router.get(
   companyController.editJob
 );
 
-router.post(
+router.patch(
   "/job/edit/:id",
   authMiddleware.verifyTokenCompany,
   upload.array("images", 8),
