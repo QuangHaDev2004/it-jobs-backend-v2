@@ -208,3 +208,45 @@ export const listJob = async (req: AccountRequest, res: Response) => {
     });
   }
 };
+
+export const editJob = async (req: AccountRequest, res: Response) => {
+  try {
+    const id = req.params.id;
+    const companyId = req.account.id;
+
+    const jobDetail = await Job.findOne({
+      _id: id,
+      companyId: companyId,
+    });
+
+    if (!jobDetail) {
+      res.json({
+        code: "error",
+        message: "Dữ liệu không hợp lệ!",
+      });
+      return;
+    }
+
+    res.json({
+      code: "success",
+      message: "Lấy dữ liệu thành công!",
+      jobDetail: jobDetail,
+    });
+  } catch (error) {
+    res.json({
+      code: "error",
+      message: "Dữ liệu không hợp lệ!",
+    });
+  }
+};
+
+export const editJobPatch = async (req: AccountRequest, res: Response) => {
+  console.log(req.params.id);
+  console.log("---------------------");
+  console.log(req.body);
+  console.log("---------------------");
+  console.log(req.files);
+  
+  
+  
+};
