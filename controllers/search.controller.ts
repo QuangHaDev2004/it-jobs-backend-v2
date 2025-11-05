@@ -6,7 +6,7 @@ import City from "../models/city.model";
 export const search = async (req: Request, res: Response) => {
   try {
     // console.log(req.query);
-    const { language, city } = req.query;
+    const { language, city, company } = req.query;
     const find: any = {};
 
     // Search by language
@@ -14,11 +14,11 @@ export const search = async (req: Request, res: Response) => {
 
     // Search by city
     if (city) {
-      const cityDoc = await City.findOne({
+      const cityDetail = await City.findOne({
         name: city,
       });
 
-      if (!cityDoc) {
+      if (!cityDetail) {
         return res.json({
           code: "error",
           message: "Không có công việc vào ở thành phố này!",
@@ -27,10 +27,27 @@ export const search = async (req: Request, res: Response) => {
       }
 
       const companyIds = await AccountCompany.find({
-        city: cityDoc._id,
+        city: cityDetail._id,
       }).distinct("_id");
 
       find.companyId = { $in: companyIds };
+    }
+
+    // search by company
+    if (company) {
+      const companyDetail = await AccountCompany.findOne({
+        companyName: company,
+      });
+
+      if (!companyDetail) {
+        return res.json({
+          code: "error",
+          message: "Không có công việc vào ở công ty này!",
+          jobs: [],
+        });
+      }
+
+      find.companyId = companyDetail._id;
     }
 
     const jobs = await Job.find(find)
