@@ -2,21 +2,24 @@ import mongoose from "mongoose";
 
 const schema = new mongoose.Schema(
   {
-    companyId: String,
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AccountCompany",
+    },
     title: String,
     salaryMin: Number,
     salaryMax: Number,
     position: String,
     workingForm: String,
-    technologies: Array,
+    technologies: [String],
     description: String,
-    images: Array
+    images: [String],
   },
   {
     timestamps: true, // Tự động sinh ra trường createdAt và updatedAt
   }
 );
 
-const Job = mongoose.model('Job', schema, "jobs");
+const Job = mongoose.model("Job", schema, "jobs");
 
 export default Job;
