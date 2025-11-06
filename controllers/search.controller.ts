@@ -6,7 +6,7 @@ import City from "../models/city.model";
 export const search = async (req: Request, res: Response) => {
   try {
     // console.log(req.query);
-    const { language, city, company } = req.query;
+    const { language, city, company, position, workingForm } = req.query;
     const find: any = {};
 
     // Search by language
@@ -49,6 +49,12 @@ export const search = async (req: Request, res: Response) => {
 
       find.companyId = companyDetail._id;
     }
+
+    // search by position
+    if (position) find.position = position;
+
+    // search by workingForm
+    if (workingForm) find.workingForm = workingForm;
 
     const jobs = await Job.find(find)
       .populate({
