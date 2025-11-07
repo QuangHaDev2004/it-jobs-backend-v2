@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { AccountRequest } from "../interfaces/request.interface";
 import Job from "../models/job.model";
 import City from "../models/city.model";
+import slugify from "slugify";
 
 export const registerPost = async (req: Request, res: Response) => {
   const existAccount = await AccountCompany.findOne({
@@ -132,6 +133,17 @@ export const createJobPost = async (req: AccountRequest, res: Response) => {
     req.body.technologies = req.body.technologies
       ? JSON.parse(req.body.technologies)
       : [];
+
+    req.body.search = slugify(
+      `${req.body.title} ${req.body.position} ${req.body.technologies.join(
+        " "
+      )}`,
+      {
+        replacement: " ",
+        lower: true,
+        strict: true,
+      }
+    );
 
     // Xử lý hình ảnh
     req.body.images = [];
@@ -264,6 +276,17 @@ export const editJobPatch = async (req: AccountRequest, res: Response) => {
     req.body.technologies = req.body.technologies
       ? JSON.parse(req.body.technologies)
       : [];
+
+    req.body.search = slugify(
+      `${req.body.title} ${req.body.position} ${req.body.technologies.join(
+        " "
+      )}`,
+      {
+        replacement: " ",
+        lower: true,
+        strict: true,
+      }
+    );
 
     // Xử lý hình ảnh
     req.body.images = req.body.images

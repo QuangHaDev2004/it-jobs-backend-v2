@@ -2,17 +2,16 @@ import { Request, Response } from "express";
 import Job from "../models/job.model";
 import AccountCompany from "../models/account-company.model";
 import City from "../models/city.model";
+import slugify from "slugify";
 
 export const search = async (req: Request, res: Response) => {
   try {
-    // console.log(req.query);
-    const { language, city, company, position, workingForm } = req.query;
+    const { language, city, company, position, workingForm, keyword } =
+      req.query;
     const find: any = {};
 
-    // Search by language
     if (language) find.technologies = language;
 
-    // Search by city
     if (city) {
       const cityDetail = await City.findOne({
         name: city,
@@ -33,7 +32,6 @@ export const search = async (req: Request, res: Response) => {
       find.companyId = { $in: companyIds };
     }
 
-    // search by company
     if (company) {
       const companyDetail = await AccountCompany.findOne({
         companyName: company,
@@ -49,12 +47,19 @@ export const search = async (req: Request, res: Response) => {
 
       find.companyId = companyDetail._id;
     }
-
-    // search by position
     if (position) find.position = position;
 
-    // search by workingForm
     if (workingForm) find.workingForm = workingForm;
+
+    if (keyword) {
+      const searchKeyword = slugify(`${keyword}`, {
+        replacement: " ",
+        lower: true,
+      });
+
+      const keywordRegex = new RegExp(searchKeyword, "i");
+      find.search = keywordRegex;
+    }
 
     const jobs = await Job.find(find)
       .populate({
