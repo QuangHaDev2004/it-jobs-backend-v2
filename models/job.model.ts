@@ -14,6 +14,7 @@ const schema = new mongoose.Schema(
     technologies: [String],
     description: String,
     images: [String],
+    search: String,
   },
   {
     timestamps: true, // Tự động sinh ra trường createdAt và updatedAt
