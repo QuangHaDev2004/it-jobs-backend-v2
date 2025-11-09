@@ -392,3 +392,71 @@ export const list = async (req: Request, res: Response) => {
     companyList: companyListFinal,
   });
 };
+
+export const detail = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const record = await AccountCompany.findOne({
+      _id: id,
+    });
+
+    if (!record) {
+      return res.status(404).json({
+        code: "error",
+        message: "Không tìm thấy thông tin công ty!",
+      });
+    }
+
+    const companyDetail = {
+      id: record.id,
+      logo: record.logo,
+      companyName: record.companyName,
+      address: record.address,
+      companyModel: record.companyModel,
+      companyEmployees: record.companyEmployees,
+      workingTime: record.workingTime,
+      workOverTime: record.workOverTime,
+      description: record.description,
+    };
+
+    // List Job
+    const jobs = await Job.find({
+      companyId: record._id,
+    }).sort({
+      createAt: "desc",
+    });
+
+    const city = await City.findOne({
+      _id: record.city,
+    });
+
+    const dataFinal = jobs.map((item) => {
+      return {
+        id: item.id,
+        companyLogo: record.logo,
+        title: item.title,
+        companyName: record.companyName,
+        salaryMin: item.salaryMin,
+        salaryMax: item.salaryMax,
+        position: item.position,
+        workingForm: item.workingForm,
+        cityName: city?.name,
+        technologies: item.technologies,
+      };
+    });
+
+    res.status(200).json({
+      code: "success",
+      message: "Lấy dữ liệu chi tiết công ty thành công!",
+      companyDetail,
+      jobs: dataFinal,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      code: "error",
+      message: "Dữ liệu không hợp lệ!",
+    });
+  }
+};
