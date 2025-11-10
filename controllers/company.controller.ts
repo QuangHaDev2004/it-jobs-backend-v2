@@ -556,11 +556,70 @@ export const detailCV = async (req: AccountRequest, res: Response) => {
       technologies: infoJob.technologies,
     };
 
+    await CV.updateOne(
+      {
+        _id: id,
+      },
+      {
+        viewed: true,
+      }
+    );
+
     res.status(200).json({
       code: "success",
       message: "Lấy dữ liệu chi tiết CV thành công!",
       cvDetail: dataFinalCV,
       jobDetail: dataFinalJob,
+    });
+  } catch (error) {
+    res.status(500).json({
+      code: "error",
+      message: "Dữ liệu không hợp lệ!",
+    });
+  }
+};
+
+export const changeStatusCV = async (req: AccountRequest, res: Response) => {
+  try {
+    const id = req.params.id;
+    const companyId = req.account.id;
+    const statusCV = req.body.status;
+
+    const infoCV = await CV.findOne({
+      _id: id,
+    });
+
+    if (!infoCV) {
+      return res.status(404).json({
+        code: "error",
+        message: "Không tìm thấy thông tin CV!",
+      });
+    }
+
+    const infoJob = await Job.findOne({
+      _id: infoCV.jobId,
+      companyId: companyId,
+    });
+
+    if (!infoJob) {
+      return res.status(404).json({
+        code: "error",
+        message: "Không tìm thấy thông tin công việc!",
+      });
+    }
+
+    await CV.updateOne(
+      {
+        _id: id,
+      },
+      {
+        status: statusCV,
+      }
+    );
+
+    res.status(200).json({
+      code: "success",
+      message: "Cập nhật trạng thái thành công!",
     });
   } catch (error) {
     res.status(500).json({
