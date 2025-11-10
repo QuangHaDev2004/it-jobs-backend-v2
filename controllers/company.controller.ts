@@ -6,6 +6,7 @@ import { AccountRequest } from "../interfaces/request.interface";
 import Job from "../models/job.model";
 import City from "../models/city.model";
 import slugify from "slugify";
+import CV from "../models/cv.model";
 
 export const registerPost = async (req: Request, res: Response) => {
   const existAccount = await AccountCompany.findOne({
@@ -454,6 +455,55 @@ export const detail = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.log(error);
+    res.status(500).json({
+      code: "error",
+      message: "Dữ liệu không hợp lệ!",
+    });
+  }
+};
+
+export const listCV = async (req: AccountRequest, res: Response) => {
+  try {
+    const companyId = req.account.id;
+
+    const jobListId = await Job.find({
+      companyId: companyId,
+    }).distinct("_id");
+
+    const cvs = await CV.find({
+      jobId: { $in: jobListId },
+    })
+      .populate({
+        path: "jobId",
+      })
+      .sort({
+        createAt: "desc",
+      });
+
+    const dataFinal = cvs.map((cv) => {
+      const jobDetail = cv.jobId as any;
+
+      return {
+        id: cv.id,
+        title: jobDetail.title,
+        fullName: cv.fullName,
+        email: cv.email,
+        phone: cv.phone,
+        salaryMin: jobDetail.salaryMin,
+        salaryMax: jobDetail.salaryMax,
+        position: jobDetail.position,
+        workingForm: jobDetail.workingForm,
+        viewed: cv.viewed,
+        status: cv.status,
+      };
+    });
+
+    res.status(200).json({
+      code: "success",
+      message: "Lấy dữ liệu danh sách CV thành công!",
+      cvs: dataFinal,
+    });
+  } catch (error) {
     res.status(500).json({
       code: "error",
       message: "Dữ liệu không hợp lệ!",
