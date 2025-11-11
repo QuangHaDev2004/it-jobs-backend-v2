@@ -3,6 +3,9 @@ import AccountUser from "../models/account-user.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AccountRequest } from "../interfaces/request.interface";
+import Job from "../models/job.model";
+import CV from "../models/cv.model";
+import AccountCompany from "../models/account-company.model";
 
 export const registerPost = async (req: Request, res: Response) => {
   const existAccount = await AccountUser.findOne({
@@ -118,6 +121,55 @@ export const profilePatch = async (req: AccountRequest, res: Response) => {
     res.json({
       code: "error",
       message: "Cập nhật thất bại!",
+    });
+  }
+};
+
+export const listCV = async (req: AccountRequest, res: Response) => {
+  try {
+    const email = req.account.email;
+
+    const cvs = await CV.find({
+      email: email,
+    }).sort({
+      createdAt: "desc",
+    });
+
+    const dataFinal = [];
+    for (const item of cvs) {
+      const jobDetail = await Job.findOne({
+        _id: item.jobId,
+      });
+
+      const companyDetail = await AccountCompany.findOne({
+        _id: jobDetail?.companyId,
+      });
+
+      if (jobDetail && companyDetail) {
+        const itemFinal = {
+          id: item.id,
+          title: jobDetail.title,
+          companyName: companyDetail.companyName,
+          salaryMin: jobDetail.salaryMin,
+          salaryMax: jobDetail.salaryMax,
+          position: jobDetail.position,
+          workingForm: jobDetail.workingForm,
+          status: item.status,
+        };
+
+        dataFinal.push(itemFinal);
+      }
+    }
+
+    res.status(200).json({
+      code: "success",
+      message: "Lấy dữ liệu danh sách CV thành công!",
+      cvs: dataFinal,
+    });
+  } catch (error) {
+    res.status(500).json({
+      code: "error",
+      message: "Dữ liệu không hợp lệ!",
     });
   }
 };
