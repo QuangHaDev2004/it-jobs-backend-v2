@@ -632,7 +632,6 @@ export const changeStatusCV = async (req: AccountRequest, res: Response) => {
 export const deleteCVDel = async (req: AccountRequest, res: Response) => {
   try {
     const id = req.params.id;
-    const companyId = req.account.id;
 
     const infoCV = await CV.findOne({
       _id: id,
@@ -642,18 +641,6 @@ export const deleteCVDel = async (req: AccountRequest, res: Response) => {
       return res.status(404).json({
         code: "error",
         message: "Không tìm thấy thông tin CV!",
-      });
-    }
-
-    const infoJob = await Job.findOne({
-      _id: infoCV.jobId,
-      companyId: companyId,
-    });
-
-    if (!infoJob) {
-      return res.status(404).json({
-        code: "error",
-        message: "Không tìm thấy thông tin công việc!",
       });
     }
 
