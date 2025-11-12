@@ -8,8 +8,7 @@ export const list = async (req: Request, res: Response) => {
     })
     .collation({ locale: "vi" });
 
-  res.json({
-    code: "success",
+  res.status(200).json({
     message: "Thành công!",
     cityList: cityList,
   });

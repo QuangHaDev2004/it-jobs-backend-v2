@@ -2,10 +2,7 @@ import mongoose from "mongoose";
 
 const schema = new mongoose.Schema(
   {
-    jobId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Job",
-    },
+    jobId: String,
     fullName: String,
     email: String,
     phone: String,

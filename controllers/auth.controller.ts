@@ -7,15 +7,14 @@ export const refreshToken = async (req: Request, res: Response) => {
   const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
-    res.status(401).json({
+    return res.status(401).json({
       code: "error",
-      message: "Không tìm thấy refresh token trong cookie!",
+      message: "RT không tồn tại!",
     });
-    return;
   }
 
   try {
-    var decoded = jwt.verify(
+    const decoded = jwt.verify(
       refreshToken,
       `${process.env.REFRESH_TOKEN_SECRET}`
     ) as jwt.JwtPayload;
@@ -32,7 +31,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       }
     );
 
-    res.json({
+    res.status(200).json({
       code: "success",
       message: "Tạo token mới thành công!",
       accessToken: newAccessToken,
@@ -41,27 +40,24 @@ export const refreshToken = async (req: Request, res: Response) => {
     res.clearCookie("refreshToken");
     res.status(401).json({
       code: "error",
-      message: "Refresh token không hợp lệ!",
+      message: "Refresh token không hợp lệ hoặc hết hạn!",
     });
   }
 };
 
 export const check = async (req: Request, res: Response) => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.split(" ")[1];
-
+    const token = req.cookies.token;
     if (!token) {
-      res.status(401).json({
+      return res.status(401).json({
         code: "error",
-        message: "Không có access token!",
+        message: "Token không hợp lệ!",
       });
-      return;
     }
 
     const decoded = jwt.verify(
       token,
-      `${process.env.ACCESS_TOKEN_SECRET}`
+      `${process.env.JWT_SECRET}`
     ) as jwt.JwtPayload;
     const { id, email } = decoded;
 
@@ -79,12 +75,11 @@ export const check = async (req: Request, res: Response) => {
         avatar: existAccountUser.avatar,
       };
 
-      res.json({
+      return res.status(200).json({
         code: "success",
         message: "Thông tin tài khoản user!",
         infoUser: infoUser,
       });
-      return;
     }
 
     const existAccountCompany = await AccountCompany.findOne({
@@ -108,32 +103,40 @@ export const check = async (req: Request, res: Response) => {
         description: existAccountCompany.description,
       };
 
-      res.json({
+      return res.status(200).json({
         code: "success",
         message: "Thông tin tài khoản company!",
         infoCompany: infoCompany,
       });
-      return;
     }
 
     if (!existAccountUser && !existAccountCompany) {
-      res.status(401).json({
+      return res.status(401).json({
         code: "error",
         message: "Không tìm thấy tài khoản!",
       });
     }
   } catch (error) {
-    res.status(401).json({
+    res.clearCookie("token");
+    return res.status(401).json({
       code: "error",
-      message: "Token không hợp lệ!",
+      message: "Token không hợp lệ hoặc hết hạn!",
     });
   }
 };
 
 export const logout = async (req: Request, res: Response) => {
-  res.clearCookie("refreshToken");
-  res.json({
-    code: "success",
-    message: "Đã đăng xuất!",
-  });
+  try {
+    res.clearCookie("token");
+    res.status(200).json({
+      code: "success",
+      message: "Đã đăng xuất!",
+    });
+  } catch (error) {
+    console.log("Error during logout: ", error);
+    return res.status(500).json({
+      code: "error",
+      message: "Lỗi hệ thống!",
+    });
+  }
 };

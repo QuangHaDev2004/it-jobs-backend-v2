@@ -8,99 +8,109 @@ export const search = async (req: Request, res: Response) => {
   try {
     const { language, city, company, position, workingForm, keyword } =
       req.query;
-    const find: any = {};
+    const dataFinal = [];
 
-    if (language) find.technologies = language;
+    if (Object.keys(req.query).length > 0) {
+      const find: any = {};
 
-    if (city) {
-      const cityDetail = await City.findOne({
-        name: city,
-      });
+      if (language) find.technologies = language;
 
-      if (!cityDetail) {
-        return res.json({
-          code: "error",
-          message: "Không có công việc vào ở thành phố này!",
-          jobs: [],
+      if (city) {
+        const cityDetail = await City.findOne({
+          name: city,
         });
+
+        if (!cityDetail) {
+          return res.status(404).json({
+            code: "error",
+            message: "Không có công việc vào ở thành phố này!",
+            jobs: [],
+          });
+        }
+
+        const companyIds = await AccountCompany.find({
+          city: cityDetail.id,
+        }).distinct("_id");
+
+        find.companyId = { $in: companyIds };
       }
 
-      const companyIds = await AccountCompany.find({
-        city: cityDetail._id,
-      }).distinct("_id");
-
-      find.companyId = { $in: companyIds };
-    }
-
-    if (company) {
-      const companyDetail = await AccountCompany.findOne({
-        companyName: company,
-      });
-
-      if (!companyDetail) {
-        return res.json({
-          code: "error",
-          message: "Không có công việc vào ở công ty này!",
-          jobs: [],
+      if (company) {
+        const companyDetail = await AccountCompany.findOne({
+          companyName: company,
         });
+
+        if (!companyDetail) {
+          return res.status(404).json({
+            code: "error",
+            message: "Không có công việc vào ở công ty này!",
+            jobs: [],
+          });
+        }
+
+        find.companyId = companyDetail.id;
       }
 
-      find.companyId = companyDetail._id;
-    }
-    if (position) find.position = position;
+      if (position) find.position = position;
 
-    if (workingForm) find.workingForm = workingForm;
+      if (workingForm) find.workingForm = workingForm;
 
-    if (keyword) {
-      const searchKeyword = slugify(`${keyword}`, {
-        replacement: " ",
-        lower: true,
-      });
+      if (keyword) {
+        const searchKeyword = slugify(`${keyword}`, {
+          replacement: " ",
+          lower: true,
+        });
 
-      const keywordRegex = new RegExp(searchKeyword, "i");
-      find.search = keywordRegex;
-    }
+        const keywordRegex = new RegExp(searchKeyword, "i");
+        find.search = keywordRegex;
+      }
 
-    const jobs = await Job.find(find)
-      .populate({
-        path: "companyId", // Tên trường trong model Job
-        model: AccountCompany,
-        populate: {
-          path: "city",
-          model: City,
-        },
-      })
-      .sort({
+      const jobs = await Job.find(find).sort({
         createdAt: "desc",
       });
 
-    const dataFinal = jobs.map((item) => {
-      const company = (item.companyId as any) || {};
-      const city = company.city || {};
+      for (const item of jobs) {
+        const itemFinal = {
+          id: item.id,
+          companyLogo: "",
+          title: item.title,
+          companyName: "",
+          salaryMin: item.salaryMin,
+          salaryMax: item.salaryMax,
+          position: item.position,
+          workingForm: item.workingForm,
+          cityName: "",
+          technologies: item.technologies,
+        };
 
-      return {
-        id: item.id,
-        title: item.title,
-        salaryMin: item.salaryMin,
-        salaryMax: item.salaryMax,
-        position: item.position,
-        workingForm: item.workingForm,
-        technologies: item.technologies,
-        companyLogo: company.logo || "",
-        companyName: company.companyName || "",
-        cityName: city.name || "",
-      };
-    });
+        const companyInfo = await AccountCompany.findOne({
+          _id: item.companyId,
+        });
 
-    res.json({
+        if (companyInfo) {
+          itemFinal.companyLogo = companyInfo.logo as string;
+          itemFinal.companyName = companyInfo.companyName as string;
+
+          const city = await City.findOne({
+            _id: companyInfo.city,
+          });
+
+          itemFinal.cityName = city?.name as string;
+
+          dataFinal.push(itemFinal);
+        }
+      }
+    }
+
+    res.status(200).json({
       code: "success",
       message: "Lấy danh sách công việc thành công!",
       jobs: dataFinal,
     });
   } catch (error) {
-    res.json({
+    res.status(500).json({
       code: "error",
-      message: "Lỗi lấy danh sách công việc!",
+      message: "Lỗi hệ thống!",
     });
   }
 };

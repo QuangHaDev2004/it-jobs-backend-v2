@@ -9,29 +9,36 @@ import slugify from "slugify";
 import CV from "../models/cv.model";
 
 export const registerPost = async (req: Request, res: Response) => {
-  const existAccount = await AccountCompany.findOne({
-    email: req.body.email,
-  });
-
-  if (existAccount) {
-    res.json({
-      code: "error",
-      message: "Email đã tồn tại trong hệ thống!",
+  try {
+    const existAccount = await AccountCompany.findOne({
+      email: req.body.email,
     });
-    return;
+
+    if (existAccount) {
+      return res.status(409).json({
+        code: "error",
+        message: "Email đã tồn tại trong hệ thống!",
+      });
+    }
+
+    // Mã hóa mật khẩu
+    const salt = await bcrypt.genSalt(10);
+    req.body.password = await bcrypt.hash(req.body.password, salt);
+
+    const newAccount = new AccountCompany(req.body);
+    await newAccount.save();
+
+    res.status(201).json({
+      code: "success",
+      message: "Đăng ký tài khoản thành công!",
+    });
+  } catch (error) {
+    console.log("Có lỗi khi đăng ký company: ", error);
+    res.status(500).json({
+      code: "error",
+      message: "Lỗi hệ thống!",
+    });
   }
-
-  // Mã hóa mật khẩu
-  const salt = await bcrypt.genSalt(10);
-  req.body.password = await bcrypt.hash(req.body.password, salt);
-
-  const newAccount = new AccountCompany(req.body);
-  await newAccount.save();
-
-  res.json({
-    code: "success",
-    message: "Đăng ký tài khoản thành công!",
-  });
 };
 
 export const loginPost = async (req: Request, res: Response) => {
@@ -42,11 +49,10 @@ export const loginPost = async (req: Request, res: Response) => {
   });
 
   if (!existAccount) {
-    res.json({
+    return res.status(409).json({
       code: "error",
       message: "Email không tồn tại trong hệ thống!",
     });
-    return;
   }
 
   const isPasswordValid = await bcrypt.compare(
@@ -55,52 +61,47 @@ export const loginPost = async (req: Request, res: Response) => {
   );
 
   if (!isPasswordValid) {
-    res.json({
+    return res.status(401).json({
       code: "error",
       message: "Sai mật khẩu!",
     });
-    return;
   }
 
   // sign 3 tham số: thông tin muốn mã hóa, mã bảo mật, thời gian lưu
-  const accessToken = jwt.sign(
+  const token = jwt.sign(
     {
       id: existAccount.id,
       email: existAccount.email,
     },
-    `${process.env.ACCESS_TOKEN_SECRET}`,
+    `${process.env.JWT_SECRET}`,
     {
-      expiresIn: "15m", // 15 phút
+      expiresIn: "1d",
     }
   );
 
-  const refreshToken = jwt.sign(
-    {
-      id: existAccount.id,
-      email: existAccount.email,
-    },
-    `${process.env.REFRESH_TOKEN_SECRET}`,
-    {
-      expiresIn: "7d", // 7 ngày
-    }
-  );
-
-  res.cookie("refreshToken", refreshToken, {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+  res.cookie("token", token, {
+    maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // production (https) = true, dev (htttp) = false
     sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
   });
 
-  res.json({
+  res.cookie("token", token, {
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // production (https) = true, dev (htttp) = false
+    sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
+  });
+
+  res.status(200).json({
     code: "success",
     message: "Đăng nhập thành công!",
-    accessToken: accessToken,
   });
 };
 
 export const profilePatch = async (req: AccountRequest, res: Response) => {
   try {
+    const companyId = req.account.id;
     if (req.file) {
       req.body.logo = req.file.path;
     } else {
@@ -109,17 +110,17 @@ export const profilePatch = async (req: AccountRequest, res: Response) => {
 
     await AccountCompany.updateOne(
       {
-        _id: req.account.id,
+        _id: companyId,
       },
       req.body
     );
 
-    res.json({
+    res.status(200).json({
       code: "success",
       message: "Cập nhật thành công!",
     });
   } catch (error) {
-    res.json({
+    res.status(500).json({
       code: "error",
       message: "Cập nhật thất bại!",
     });
@@ -157,12 +158,12 @@ export const createJobPost = async (req: AccountRequest, res: Response) => {
     const newRecord = new Job(req.body);
     await newRecord.save();
 
-    res.json({
+    res.status(201).json({
       code: "success",
       message: "Tạo công việc thành công!",
     });
   } catch (error) {
-    res.json({
+    res.status(500).json({
       code: "error",
       message: "Dữ liệu không hợp lệ!",
     });
@@ -204,19 +205,19 @@ export const listJob = async (req: AccountRequest, res: Response) => {
         salaryMax: item.salaryMax,
         position: item.position,
         workingForm: item.workingForm,
-        companyCity: req.account.companyCity,
+        cityName: req.account.cityName,
         technologies: item.technologies,
       });
     }
 
-    res.json({
+    res.status(200).json({
       code: "success",
       message: "Thành công!",
       jobs: dataFinal,
       totalPage: totalPage,
     });
   } catch (error) {
-    res.json({
+    res.status(500).json({
       code: "error",
       message: "Dữ liệu không hợp lệ!",
     });
@@ -265,11 +266,10 @@ export const editJobPatch = async (req: AccountRequest, res: Response) => {
     });
 
     if (!jobDetail) {
-      res.json({
+      return res.status(400).json({
         code: "error",
-        message: "Dữ liệu không hợp lệ!",
+        message: "Công việc không tồn tại!",
       });
-      return;
     }
 
     req.body.salaryMin = req.body.salaryMin ? parseInt(req.body.salaryMin) : 0;
@@ -309,12 +309,12 @@ export const editJobPatch = async (req: AccountRequest, res: Response) => {
       req.body
     );
 
-    res.json({
+    res.status(200).json({
       code: "success",
       message: "Cập nhật thành công!",
     });
   } catch (error) {
-    res.json({
+    res.status(500).json({
       code: "error",
       message: "Dữ liệu không hợp lệ!",
     });
@@ -332,11 +332,10 @@ export const deleteJobDel = async (req: AccountRequest, res: Response) => {
     });
 
     if (!jobDetail) {
-      res.json({
+      return res.status(404).json({
         code: "error",
-        message: "Dữ liệu không hợp lệ!",
+        message: "Công việc không tồn!",
       });
-      return;
     }
 
     await Job.deleteOne({
@@ -344,12 +343,12 @@ export const deleteJobDel = async (req: AccountRequest, res: Response) => {
       companyId: companyId,
     });
 
-    res.json({
+    res.status(200).json({
       code: "success",
       message: "Đã xóa công việc!",
     });
   } catch (error) {
-    res.json({
+    res.status(500).json({
       code: "error",
       message: "Dữ liệu không hợp lệ!",
     });
@@ -357,56 +356,57 @@ export const deleteJobDel = async (req: AccountRequest, res: Response) => {
 };
 
 export const list = async (req: Request, res: Response) => {
-  let limitItems = 12;
-  if (req.query.limitItems) {
-    limitItems = parseInt(req.query.limitItems as string);
-  }
+  try {
+    let limitItems = 12;
+    if (req.query.limitItems) {
+      limitItems = parseInt(req.query.limitItems as string);
+    }
 
-  const companyList = await AccountCompany.find({}).limit(limitItems);
+    const companyList = await AccountCompany.find({}).limit(limitItems);
 
-  const companyListFinal = [];
-  for (const item of companyList) {
-    const dataItem = {
-      id: item.id,
-      logo: item.logo,
-      companyName: item.companyName,
-      cityName: "",
-      totalJob: 0,
-    };
+    const companyListFinal = [];
+    for (const item of companyList) {
+      const itemFinal = {
+        id: item.id,
+        logo: item.logo,
+        companyName: item.companyName,
+        cityName: "",
+        totalJob: 0,
+      };
 
-    const city = await City.findOne({
-      _id: item.city,
+      const city = await City.findOne({
+        _id: item.city,
+      });
+      itemFinal.cityName = city ? (city?.name as string) : "Không xác định";
+
+      const totalJob = await Job.countDocuments({
+        companyId: item.id,
+      });
+      itemFinal.totalJob = totalJob ? totalJob : 0;
+
+      companyListFinal.push(itemFinal);
+    }
+
+    res.status(200).json({
+      message: "Lấy dữ liệu thành công!",
+      companyList: companyListFinal,
     });
-    dataItem.cityName = city ? (city?.name as string) : "";
-
-    const totalJob = await Job.countDocuments({
-      companyId: item.id,
-    });
-    dataItem.totalJob = totalJob ? totalJob : 0;
-
-    companyListFinal.push(dataItem);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
-
-  res.json({
-    code: "success",
-    message: "Lấy dữ liệu thành công!",
-    companyList: companyListFinal,
-  });
 };
 
 export const detail = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
 
     const record = await AccountCompany.findOne({
       _id: id,
     });
 
     if (!record) {
-      return res.status(404).json({
-        code: "error",
-        message: "Không tìm thấy thông tin công ty!",
-      });
+      return res.status(404).json({ message: "Công ty không tồn tại!" });
     }
 
     const companyDetail = {
@@ -423,7 +423,7 @@ export const detail = async (req: Request, res: Response) => {
 
     // List Job
     const jobs = await Job.find({
-      companyId: record._id,
+      companyId: record.id,
     }).sort({
       createAt: "desc",
     });
@@ -448,17 +448,13 @@ export const detail = async (req: Request, res: Response) => {
     });
 
     res.status(200).json({
-      code: "success",
       message: "Lấy dữ liệu chi tiết công ty thành công!",
       companyDetail,
       jobs: dataFinal,
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -472,48 +468,47 @@ export const listCV = async (req: AccountRequest, res: Response) => {
 
     const cvs = await CV.find({
       jobId: { $in: jobListId },
-    })
-      .populate({
-        path: "jobId",
-      })
-      .sort({
-        createAt: "desc",
-      });
-
-    const dataFinal = cvs.map((cv) => {
-      const jobDetail = cv.jobId as any;
-
-      return {
-        id: cv.id,
-        title: jobDetail.title,
-        fullName: cv.fullName,
-        email: cv.email,
-        phone: cv.phone,
-        salaryMin: jobDetail.salaryMin,
-        salaryMax: jobDetail.salaryMax,
-        position: jobDetail.position,
-        workingForm: jobDetail.workingForm,
-        viewed: cv.viewed,
-        status: cv.status,
-      };
+    }).sort({
+      createdAt: "desc",
     });
 
+    const dataFinal = [];
+    for (const item of cvs) {
+      const jobDetail = await Job.findOne({
+        _id: item.jobId,
+      });
+
+      if (jobDetail) {
+        const itemFinal = {
+          id: item.id,
+          title: jobDetail.title,
+          fullName: item.fullName,
+          email: item.email,
+          phone: item.phone,
+          salaryMin: jobDetail.salaryMin,
+          salaryMax: jobDetail.salaryMax,
+          position: jobDetail.position,
+          workingForm: jobDetail.workingForm,
+          viewed: item.viewed,
+          status: item.status,
+        };
+
+        dataFinal.push(itemFinal);
+      }
+    }
+
     res.status(200).json({
-      code: "success",
       message: "Lấy dữ liệu danh sách CV thành công!",
       cvs: dataFinal,
     });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
 export const detailCV = async (req: AccountRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
     const companyId = req.account.id;
 
     const infoCV = await CV.findOne({
@@ -521,10 +516,7 @@ export const detailCV = async (req: AccountRequest, res: Response) => {
     });
 
     if (!infoCV) {
-      return res.status(404).json({
-        code: "error",
-        message: "Không tìm thấy thông tin CV!",
-      });
+      return res.status(404).json({ message: "Không tìm thấy thông tin CV!" });
     }
 
     const infoJob = await Job.findOne({
@@ -534,7 +526,6 @@ export const detailCV = async (req: AccountRequest, res: Response) => {
 
     if (!infoJob) {
       return res.status(404).json({
-        code: "error",
         message: "Không tìm thấy thông tin công việc!",
       });
     }
@@ -566,16 +557,12 @@ export const detailCV = async (req: AccountRequest, res: Response) => {
     );
 
     res.status(200).json({
-      code: "success",
       message: "Lấy dữ liệu chi tiết CV thành công!",
       cvDetail: dataFinalCV,
       jobDetail: dataFinalJob,
     });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -590,10 +577,7 @@ export const changeStatusCV = async (req: AccountRequest, res: Response) => {
     });
 
     if (!infoCV) {
-      return res.status(404).json({
-        code: "error",
-        message: "Không tìm thấy thông tin CV!",
-      });
+      return res.status(404).json({ message: "CV không tồn tại!" });
     }
 
     const infoJob = await Job.findOne({
@@ -603,8 +587,7 @@ export const changeStatusCV = async (req: AccountRequest, res: Response) => {
 
     if (!infoJob) {
       return res.status(404).json({
-        code: "error",
-        message: "Không tìm thấy thông tin công việc!",
+        message: "Công việc không tồn tại!",
       });
     }
 
@@ -617,15 +600,9 @@ export const changeStatusCV = async (req: AccountRequest, res: Response) => {
       }
     );
 
-    res.status(200).json({
-      code: "success",
-      message: "Cập nhật trạng thái thành công!",
-    });
+    res.status(200).json({ message: "Cập nhật trạng thái thành công!" });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -638,24 +615,15 @@ export const deleteCVDel = async (req: AccountRequest, res: Response) => {
     });
 
     if (!infoCV) {
-      return res.status(404).json({
-        code: "error",
-        message: "Không tìm thấy thông tin CV!",
-      });
+      return res.status(404).json({ message: "CV không tồn tại!" });
     }
 
     await CV.deleteOne({
       _id: id,
     });
 
-    res.status(200).json({
-      code: "success",
-      message: "Xóa CV thành công!",
-    });
+    res.status(200).json({ message: "Xóa CV thành công!" });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
