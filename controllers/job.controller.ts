@@ -1,23 +1,27 @@
 import { Request, Response } from "express";
 import Job from "../models/job.model";
 import CV from "../models/cv.model";
+import AccountCompany from "../models/account-company.model";
 
 export const detail = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
 
     const record = await Job.findOne({
       _id: id,
-    }).populate("companyId");
+    });
 
     if (!record) {
-      return res.json({
-        code: "error",
-        message: "Có lỗi khi lấy dữ liệu!",
-      });
+      return res.status(404).json({ message: "Công việc không tồn tại!" });
     }
 
-    const company = record.companyId as any;
+    const companyInfo = await AccountCompany.findOne({
+      _id: record.companyId,
+    });
+
+    if (!companyInfo) {
+      return res.status(404).json({ message: "Công ty không tồn tại!" });
+    }
 
     const jobDetail = {
       id: record.id,
@@ -30,26 +34,22 @@ export const detail = async (req: Request, res: Response) => {
       createdAt: record.createdAt,
       technologies: record.technologies,
       description: record.description,
-      companyId: company.id,
-      address: company.address,
-      companyName: company.companyName,
-      companyLogo: company.logo,
-      companyModel: company.companyModel,
-      companyEmployees: company.companyEmployees,
-      workingTime: company.workingTime,
-      workOverTime: company.workOverTime,
+      companyId: companyInfo.id,
+      address: companyInfo.address,
+      companyName: companyInfo.companyName,
+      companyLogo: companyInfo.logo,
+      companyModel: companyInfo.companyModel,
+      companyEmployees: companyInfo.companyEmployees,
+      workingTime: companyInfo.workingTime,
+      workOverTime: companyInfo.workOverTime,
     };
 
-    res.json({
-      code: "success",
+    res.status(200).json({
       message: "Lấy thông tin chi tiết job thành công!",
       jobDetail,
     });
   } catch (error) {
-    res.json({
-      code: "error",
-      message: "Có lỗi khi lấy dữ liệu!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 

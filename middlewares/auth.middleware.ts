@@ -11,19 +11,17 @@ export const verifyTokenUser = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.split(" ")[1];
+    const token = req.cookies.token;
     if (!token) {
-      res.status(401).json({
+      return res.status(401).json({
         code: "error",
-        message: "Không có access token!",
+        message: "Token không hợp lệ!",
       });
-      return;
     }
 
     const decoded = jwt.verify(
       token,
-      `${process.env.ACCESS_TOKEN_SECRET}`
+      `${process.env.JWT_SECRET}`
     ) as jwt.JwtPayload;
     const { id, email } = decoded;
 
@@ -33,18 +31,19 @@ export const verifyTokenUser = async (
     });
 
     if (!existAccount) {
-      res.status(401).json({
+      res.clearCookie("token");
+      return res.status(401).json({
         code: "error",
-        message: "Access token không hợp lệ!",
+        message: "Token không hợp lệ!",
       });
-      return;
     }
 
     req.account = existAccount;
 
     next();
   } catch (error) {
-    res.status(401).json({
+    res.clearCookie("token");
+    return res.status(500).json({
       code: "error",
       message: "Dữ liệu không hợp lệ!",
     });
@@ -57,19 +56,18 @@ export const verifyTokenCompany = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.split(" ")[1];
+    const token = req.cookies.token;
     if (!token) {
       res.status(401).json({
         code: "error",
-        message: "Không có access token!",
+        message: "Token không hợp lệ!",
       });
       return;
     }
 
     const decoded = jwt.verify(
       token,
-      `${process.env.ACCESS_TOKEN_SECRET}`
+      `${process.env.JWT_SECRET}`
     ) as jwt.JwtPayload;
     const { id, email } = decoded;
 
@@ -79,9 +77,10 @@ export const verifyTokenCompany = async (
     });
 
     if (!existAccount) {
+      res.clearCookie("token");
       res.status(401).json({
         code: "error",
-        message: "Access token không hợp lệ!",
+        message: "Token không hợp lệ!",
       });
       return;
     }
@@ -92,12 +91,13 @@ export const verifyTokenCompany = async (
         _id: existAccount.city,
       });
 
-      if (city) req.account.companyCity = city.name;
+      if (city) req.account.cityName = city.name;
     }
 
     next();
   } catch (error) {
-    res.status(401).json({
+    res.clearCookie("token");
+    return res.status(500).json({
       code: "error",
       message: "Dữ liệu không hợp lệ!",
     });

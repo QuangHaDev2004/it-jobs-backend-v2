@@ -6,10 +6,7 @@ const schema = new mongoose.Schema(
     email: String,
     password: String,
     phone: String,
-    city: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "City",
-    },
+    city: String,
     address: String,
     companyModel: String,
     companyEmployees: String,
