@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import Joi from "joi";
+import { ResponseCode } from "../constants/responseCode";
 
 export const registerPost = async (
   req: Request,
@@ -53,12 +54,10 @@ export const registerPost = async (
   const { error } = schema.validate(req.body);
   if (error) {
     const errorMessage = error.details[0].message;
-
-    res.json({
-      code: "error",
+    return res.json({
+      code: ResponseCode.ERROR,
       message: errorMessage,
     });
-    return;
   }
 
   next();
@@ -83,12 +82,10 @@ export const loginPost = async (
   const { error } = schema.validate(req.body);
   if (error) {
     const errorMessage = error.details[0].message;
-
-    res.json({
-      code: "error",
+    return res.json({
+      code: ResponseCode.ERROR,
       message: errorMessage,
     });
-    return;
   }
 
   next();
