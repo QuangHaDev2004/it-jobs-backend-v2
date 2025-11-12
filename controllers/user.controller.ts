@@ -6,6 +6,7 @@ import { AccountRequest } from "../interfaces/request.interface";
 import Job from "../models/job.model";
 import CV from "../models/cv.model";
 import AccountCompany from "../models/account-company.model";
+import { ResponseCode } from "../constants/responseCode";
 
 export const registerPost = async (req: Request, res: Response) => {
   try {
@@ -42,9 +43,10 @@ export const loginPost = async (req: Request, res: Response) => {
     });
 
     if (!existAccount) {
-      return res
-        .status(401)
-        .json({ message: "Email không tồn tại trong hệ thống!" });
+      return res.json({
+        code: ResponseCode.ERROR,
+        message: "Email không tồn tại trong hệ thống!",
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -53,7 +55,7 @@ export const loginPost = async (req: Request, res: Response) => {
     );
 
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Sai mật khẩu!" });
+      return res.json({ code: ResponseCode.ERROR, message: "Sai mật khẩu!" });
     }
 
     // sign 3 tham số: thông tin muốn mã hóa, mã bảo mật, thời gian lưu
@@ -75,10 +77,10 @@ export const loginPost = async (req: Request, res: Response) => {
       sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
     });
 
-    res.status(200).json({ message: "Đăng nhập thành công!" });
+    res.json({ code: ResponseCode.SUCCESS, message: "Đăng nhập thành công!" });
   } catch (error) {
-    console.log("Error during login: ", error);
-    return res.status(500).json({ message: "Lỗi hệ thống!" });
+    console.log(error);
+    return res.json({ code: ResponseCode.ERROR, message: "Lỗi hệ thống!" });
   }
 };
 

@@ -7,6 +7,7 @@ import Job from "../models/job.model";
 import City from "../models/city.model";
 import slugify from "slugify";
 import CV from "../models/cv.model";
+import { ResponseCode } from "../constants/responseCode";
 
 export const registerPost = async (req: Request, res: Response) => {
   try {
@@ -42,61 +43,53 @@ export const registerPost = async (req: Request, res: Response) => {
 };
 
 export const loginPost = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const existAccount = await AccountCompany.findOne({
-    email: email,
-  });
-
-  if (!existAccount) {
-    return res.status(409).json({
-      code: "error",
-      message: "Email không tồn tại trong hệ thống!",
+    const existAccount = await AccountCompany.findOne({
+      email: email,
     });
-  }
 
-  const isPasswordValid = await bcrypt.compare(
-    password,
-    `${existAccount.password}`
-  );
-
-  if (!isPasswordValid) {
-    return res.status(401).json({
-      code: "error",
-      message: "Sai mật khẩu!",
-    });
-  }
-
-  // sign 3 tham số: thông tin muốn mã hóa, mã bảo mật, thời gian lưu
-  const token = jwt.sign(
-    {
-      id: existAccount.id,
-      email: existAccount.email,
-    },
-    `${process.env.JWT_SECRET}`,
-    {
-      expiresIn: "1d",
+    if (!existAccount) {
+      return res.json({
+        code: ResponseCode.ERROR,
+        message: "Email không tồn tại trong hệ thống!",
+      });
     }
-  );
 
-  res.cookie("token", token, {
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // production (https) = true, dev (htttp) = false
-    sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
-  });
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      `${existAccount.password}`
+    );
 
-  res.cookie("token", token, {
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // production (https) = true, dev (htttp) = false
-    sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
-  });
+    if (!isPasswordValid) {
+      return res.json({ code: ResponseCode.ERROR, message: "Sai mật khẩu!" });
+    }
 
-  res.status(200).json({
-    code: "success",
-    message: "Đăng nhập thành công!",
-  });
+    // sign 3 tham số: thông tin muốn mã hóa, mã bảo mật, thời gian lưu
+    const token = jwt.sign(
+      {
+        id: existAccount.id,
+        email: existAccount.email,
+      },
+      `${process.env.JWT_SECRET}`,
+      {
+        expiresIn: "1d",
+      }
+    );
+
+    res.cookie("token", token, {
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // production (https) = true, dev (htttp) = false
+      sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
+    });
+
+    res.json({ code: ResponseCode.SUCCESS, message: "Đăng nhập thành công!" });
+  } catch (error) {
+    console.log(error);
+    res.json({ code: ResponseCode.ERROR, message: "Lỗi hệ thống!" });
+  }
 };
 
 export const profilePatch = async (req: AccountRequest, res: Response) => {
@@ -388,7 +381,7 @@ export const list = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
-      message: "Lấy dữ liệu thành công!",
+      message: "Danh sách công ty!",
       companyList: companyListFinal,
     });
   } catch (error) {
