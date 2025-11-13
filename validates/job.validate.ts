@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import Joi from "joi";
+import { ResponseCode } from "../constants/responseCode";
 
 export const applyPost = (req: Request, res: Response, next: NextFunction) => {
   const schema = Joi.object({
@@ -34,12 +35,7 @@ export const applyPost = (req: Request, res: Response, next: NextFunction) => {
 
   if (error) {
     const errorMessage = error.details[0].message;
-
-    res.json({
-      code: "error",
-      message: errorMessage,
-    });
-    return;
+    return res.status(400).json({ message: errorMessage });
   }
 
   next();

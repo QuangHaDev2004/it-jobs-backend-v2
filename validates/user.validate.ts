@@ -54,10 +54,7 @@ export const registerPost = async (
   const { error } = schema.validate(req.body);
   if (error) {
     const errorMessage = error.details[0].message;
-    return res.json({
-      code: ResponseCode.ERROR,
-      message: errorMessage,
-    });
+    return res.status(400).json({ message: errorMessage });
   }
 
   next();
@@ -82,10 +79,7 @@ export const loginPost = async (
   const { error } = schema.validate(req.body);
   if (error) {
     const errorMessage = error.details[0].message;
-    return res.json({
-      code: ResponseCode.ERROR,
-      message: errorMessage,
-    });
+    return res.status(400).json({ message: errorMessage });
   }
 
   next();

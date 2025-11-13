@@ -7,7 +7,6 @@ import Job from "../models/job.model";
 import City from "../models/city.model";
 import slugify from "slugify";
 import CV from "../models/cv.model";
-import { ResponseCode } from "../constants/responseCode";
 
 export const registerPost = async (req: Request, res: Response) => {
   try {
@@ -17,7 +16,6 @@ export const registerPost = async (req: Request, res: Response) => {
 
     if (existAccount) {
       return res.status(409).json({
-        code: "error",
         message: "Email đã tồn tại trong hệ thống!",
       });
     }
@@ -29,16 +27,10 @@ export const registerPost = async (req: Request, res: Response) => {
     const newAccount = new AccountCompany(req.body);
     await newAccount.save();
 
-    res.status(201).json({
-      code: "success",
-      message: "Đăng ký tài khoản thành công!",
-    });
+    res.status(201).json({ message: "Đăng ký tài khoản thành công!" });
   } catch (error) {
-    console.log("Có lỗi khi đăng ký company: ", error);
-    res.status(500).json({
-      code: "error",
-      message: "Lỗi hệ thống!",
-    });
+    console.log(error);
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -51,8 +43,7 @@ export const loginPost = async (req: Request, res: Response) => {
     });
 
     if (!existAccount) {
-      return res.json({
-        code: ResponseCode.ERROR,
+      return res.status(404).json({
         message: "Email không tồn tại trong hệ thống!",
       });
     }
@@ -63,7 +54,7 @@ export const loginPost = async (req: Request, res: Response) => {
     );
 
     if (!isPasswordValid) {
-      return res.json({ code: ResponseCode.ERROR, message: "Sai mật khẩu!" });
+      return res.status(401).json({ message: "Sai mật khẩu!" });
     }
 
     // sign 3 tham số: thông tin muốn mã hóa, mã bảo mật, thời gian lưu
@@ -85,10 +76,10 @@ export const loginPost = async (req: Request, res: Response) => {
       sameSite: "lax", // Cho phép gửi cookie giữa các tên miền
     });
 
-    res.json({ code: ResponseCode.SUCCESS, message: "Đăng nhập thành công!" });
+    res.status(200).json({ message: "Đăng nhập thành công!" });
   } catch (error) {
     console.log(error);
-    res.json({ code: ResponseCode.ERROR, message: "Lỗi hệ thống!" });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
