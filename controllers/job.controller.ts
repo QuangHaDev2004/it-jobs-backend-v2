@@ -60,14 +60,8 @@ export const applyPost = async (req: Request, res: Response) => {
     const newRecord = new CV(req.body);
     await newRecord.save();
 
-    res.status(201).json({
-      code: "success",
-      message: "Gửi CV ứng tuyển thành công!",
-    });
+    res.status(201).json({ message: "Gửi CV ứng tuyển thành công!" });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Có lỗi khi gửi CV!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
