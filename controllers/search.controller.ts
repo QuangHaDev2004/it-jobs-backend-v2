@@ -22,7 +22,6 @@ export const search = async (req: Request, res: Response) => {
 
         if (!cityDetail) {
           return res.status(404).json({
-            code: "error",
             message: "Không có công việc vào ở thành phố này!",
             jobs: [],
           });
@@ -42,7 +41,6 @@ export const search = async (req: Request, res: Response) => {
 
         if (!companyDetail) {
           return res.status(404).json({
-            code: "error",
             message: "Không có công việc vào ở công ty này!",
             jobs: [],
           });
@@ -103,14 +101,10 @@ export const search = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
-      code: "success",
-      message: "Lấy danh sách công việc thành công!",
+      message: "Danh sách công việc thành công!",
       jobs: dataFinal,
     });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Lỗi hệ thống!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };

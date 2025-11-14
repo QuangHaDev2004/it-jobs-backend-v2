@@ -86,6 +86,7 @@ export const loginPost = async (req: Request, res: Response) => {
 export const profilePatch = async (req: AccountRequest, res: Response) => {
   try {
     const companyId = req.account.id;
+
     if (req.file) {
       req.body.logo = req.file.path;
     } else {
@@ -99,15 +100,9 @@ export const profilePatch = async (req: AccountRequest, res: Response) => {
       req.body
     );
 
-    res.status(200).json({
-      code: "success",
-      message: "Cập nhật thành công!",
-    });
+    res.status(200).json({ message: "Cập nhật thành công!" });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Cập nhật thất bại!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -142,15 +137,9 @@ export const createJobPost = async (req: AccountRequest, res: Response) => {
     const newRecord = new Job(req.body);
     await newRecord.save();
 
-    res.status(201).json({
-      code: "success",
-      message: "Tạo công việc thành công!",
-    });
+    res.status(201).json({ message: "Tạo công việc thành công!" });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -195,16 +184,12 @@ export const listJob = async (req: AccountRequest, res: Response) => {
     }
 
     res.status(200).json({
-      code: "success",
-      message: "Thành công!",
+      message: "Danh sách công việc!",
       jobs: dataFinal,
       totalPage: totalPage,
     });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -219,23 +204,15 @@ export const editJob = async (req: AccountRequest, res: Response) => {
     });
 
     if (!jobDetail) {
-      res.json({
-        code: "error",
-        message: "Dữ liệu không hợp lệ!",
-      });
-      return;
+      return res.status(404).json({ message: "Công việc không tồn tại!" });
     }
 
-    res.json({
-      code: "success",
-      message: "Lấy dữ liệu thành công!",
+    res.status(200).json({
+      message: "Chi tiết công việc!",
       jobDetail: jobDetail,
     });
   } catch (error) {
-    res.json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -250,10 +227,7 @@ export const editJobPatch = async (req: AccountRequest, res: Response) => {
     });
 
     if (!jobDetail) {
-      return res.status(400).json({
-        code: "error",
-        message: "Công việc không tồn tại!",
-      });
+      return res.status(404).json({ message: "Công việc không tồn tại!" });
     }
 
     req.body.salaryMin = req.body.salaryMin ? parseInt(req.body.salaryMin) : 0;
@@ -293,15 +267,9 @@ export const editJobPatch = async (req: AccountRequest, res: Response) => {
       req.body
     );
 
-    res.status(200).json({
-      code: "success",
-      message: "Cập nhật thành công!",
-    });
+    res.status(200).json({ message: "Cập nhật thành công!" });
   } catch (error) {
-    res.status(500).json({
-      code: "error",
-      message: "Dữ liệu không hợp lệ!",
-    });
+    res.status(500).json({ message: "Lỗi hệ thống!" });
   }
 };
 
@@ -500,7 +468,7 @@ export const detailCV = async (req: AccountRequest, res: Response) => {
     });
 
     if (!infoCV) {
-      return res.status(404).json({ message: "Không tìm thấy thông tin CV!" });
+      return res.status(404).json({ message: "CV không tồn tại!" });
     }
 
     const infoJob = await Job.findOne({
@@ -510,7 +478,7 @@ export const detailCV = async (req: AccountRequest, res: Response) => {
 
     if (!infoJob) {
       return res.status(404).json({
-        message: "Không tìm thấy thông tin công việc!",
+        message: "Công việc không tồn tại!",
       });
     }
 
@@ -541,7 +509,7 @@ export const detailCV = async (req: AccountRequest, res: Response) => {
     );
 
     res.status(200).json({
-      message: "Lấy dữ liệu chi tiết CV thành công!",
+      message: "Chi tiết CV thành công!",
       cvDetail: dataFinalCV,
       jobDetail: dataFinalJob,
     });
