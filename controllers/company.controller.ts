@@ -7,6 +7,7 @@ import Job from "../models/job.model";
 import City from "../models/city.model";
 import slugify from "slugify";
 import CV from "../models/cv.model";
+import Review from "../models/review.model";
 
 export const registerPost = async (req: Request, res: Response) => {
   try {
@@ -575,6 +576,62 @@ export const deleteCVDel = async (req: AccountRequest, res: Response) => {
     });
 
     res.status(200).json({ message: "Xóa CV thành công!" });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi hệ thống!" });
+  }
+};
+
+export const createReviewPost = async (req: AccountRequest, res: Response) => {
+  try {
+    const companyId = req.params.id;
+    const userId = req.account.id;
+
+    req.body.companyId = companyId;
+    req.body.userId = userId;
+
+    const newRecord = new Review(req.body);
+    await newRecord.save();
+
+    res.status(201).json({ message: "Đánh giá công ty thành công!" });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi hệ thống!" });
+  }
+};
+
+export const listReview = async (req: AccountRequest, res: Response) => {
+  try {
+    const companyId = req.params.id;
+
+    const companyDetail = await AccountCompany.findOne({
+      _id: companyId,
+    });
+
+    if (!companyDetail) {
+      return res.status(404).json({ message: "Công ty không tồn tại!" });
+    }
+
+    const reviews = await Review.find({
+      companyId: companyId,
+    });
+
+    const dataFinal = [];
+    for (const item of reviews) {
+      const itemFinal = {
+        id: item.id,
+        createdAt: item.createdAt,
+        title: item.title,
+        rating: item.rating,
+        pros: item.pros,
+        cons: item.cons,
+      };
+
+      dataFinal.push(itemFinal);
+    }
+
+    res.status(200).json({
+      message: "Danh sách đánh giá!",
+      reviews: dataFinal,
+    });
   } catch (error) {
     res.status(500).json({ message: "Lỗi hệ thống!" });
   }

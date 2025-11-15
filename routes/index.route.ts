@@ -6,6 +6,7 @@ import cityRoutes from "./city.route";
 import uploadRoutes from "./upload.route";
 import searchRoutes from "./search.route";
 import jobRoutes from "./job.route";
+import saveJobRoutes from "./save-job.route";
 
 const router = Router();
 
@@ -22,5 +23,7 @@ router.use("/upload", uploadRoutes);
 router.use("/search", searchRoutes);
 
 router.use("/job", jobRoutes);
+
+router.use("/save-job", saveJobRoutes);
 
 export default router;

@@ -128,6 +128,7 @@ export const listCV = async (req: AccountRequest, res: Response) => {
       if (jobDetail && companyDetail) {
         const itemFinal = {
           id: item.id,
+          jobId: item.jobId,
           title: jobDetail.title,
           companyName: companyDetail.companyName,
           salaryMin: jobDetail.salaryMin,
