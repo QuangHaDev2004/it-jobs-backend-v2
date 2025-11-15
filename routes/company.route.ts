@@ -84,4 +84,12 @@ router.delete(
   companyController.deleteCVDel
 );
 
+router.post(
+  "/review/:id",
+  authMiddleware.verifyTokenUser,
+  companyController.createReviewPost
+);
+
+router.get("/detail/:id/review", companyController.listReview);
+
 export default router;
